@@ -5,23 +5,20 @@
 #include "iostream"
 #include "fstream"
 #include "string"
+#define UNIVERSE_FILE_SIZE 125
 using namespace std;
 
 ifstream in, in1;
 ofstream out;
 
 float tokhura_dist[5] = { 0 };
+float universe_arr[UNIVERSE_FILE_SIZE][12] = {0};
 
 //Used Files
 char* input_file = "input.txt";
 char* reference_file[5] = { "ref_file_prime_a.txt", "ref_file_prime_e.txt", "ref_file_prime_i.txt", "ref_file_prime_o.txt", "ref_file_prime_u.txt" };
-char* normalized_file = "Normalized.txt";
 char* silence_file = "silence.txt";
-char* trimmed_file = "trim.txt";
-char* ri_file = "ri_file.txt";
-char* ai_file = "ai_file.txt";
-char* ci_file = "ci_file.txt";
-char* c_prime_file = "c_prime.txt";
+char* c_prime_file = "delete_it.txt";
 char* universe_file = "universe_vowel.txt";
 char* hamming_file = "Hamming_window.txt";
 
@@ -76,6 +73,18 @@ void calculate_tokhura_distance(){
 		cout << "\n\nVowel is U" << endl;
 
 	cout << endl;
+}
+
+//To get Centroid for CB of size 1
+void get_intial_centroid(){
+
+	in.open(universe_file);
+	for (int i = 0; i < 12; i++){
+		for (int j = 0; j < UNIVERSE_FILE_SIZE; j++){
+			
+		}
+	}
+	in.close();
 }
 
 int _tmain(int argc, _TCHAR* argv[])
