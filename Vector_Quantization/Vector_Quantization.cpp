@@ -13,10 +13,15 @@ using namespace std;
 ifstream in, in1;
 ofstream out;
 
+int current_cb_size = 1;
+int bin_index[UNIVERSE_FILE_SIZE] = { -1 };
+
 float tokhura_dist[5] = { 0 };
 float tokhura_weight[12] = { 1, 3, 7, 13, 19, 22, 25, 33, 42, 50, 56, 61 };
 float universe_arr[UNIVERSE_FILE_SIZE][12] = {0};
 float code_book[CODE_BOOK_SIZE][12] = { 0 };
+float min_tokhura_universe_prev[UNIVERSE_FILE_SIZE] = { 0 };
+float min_tokhura_universe[UNIVERSE_FILE_SIZE];
 
 //Used Files
 char* input_file = "input.txt";
@@ -27,60 +32,31 @@ char* universe_file = "universe_vowel.txt";
 char* hamming_file = "Hamming_window.txt";
 
 
-//Calculating Tokhura's Distance Using Reference Files for vowels
-void calculate_tokhura_distance(){
-	int count = 0, j = 0, min_index = 0;
-	float ref_sample, input_sample, min = 9999;
-	float sum[5] = { 0 }, grand_sum = 0;
+//Calculating Tokhura's Distance Using Code Book
+void calculate_tokhura_distance(float c[12],int universe_index){
+	int  min_index = 0;
+	float min = 99999;
+	float sum[CODE_BOOK_SIZE] = { 0 };
 	string temp, temp1;
-	for (int i = 0; i < 5; i++){
-		in.open(reference_file[i]);
-		in1.open(c_prime_file);
-		//cout << "----New File----" << endl;
 
-		while (in >> temp && in1 >> temp1){
-			count++;
-			ref_sample = stof(temp);
-			input_sample = stof(temp1);
-			sum[j] += ((ref_sample - input_sample)*(ref_sample - input_sample))*tokhura_weight[count - 1];
-			if (count == 12){
-				grand_sum += sum[j];
-				//cout << "Grand_Sum : " << grand_sum << endl;
-				sum[j] = 0;
-				j++;
-				count = 0;
-			}
-			j = 0;
-		}
-		tokhura_dist[i] = grand_sum / 5;
-		grand_sum = 0;
-		in1.close();
-		in.close();
-	}
-	cout << "\n\nTokhura Distances are in order of A E I O U" << endl;
-	for (int i = 0; i < 5; i++){
-		printf("\nTokhura :%.6f", tokhura_dist[i]);
-		if (tokhura_dist[i] < min){
-			min = tokhura_dist[i];
-			min_index = i;
+	for (int j = 0; j < current_cb_size; j++){		
+		for (int i = 0; i < 12; i++){
+			sum[j] += tokhura_weight[i] * (c[i] - code_book[j][i])*(c[i] - code_book[j][i]);
+		}		
+		if (sum[j] < min){
+			min = sum[j];
+			min_index = j;
 		}
 	}
-	if (min_index == 0)
-		cout << "\n\nVowel is A" << endl;
-	else if (min_index == 1)
-		cout << "\n\nVowel is E" << endl;
-	else if (min_index == 2)
-		cout << "\n\nVowel is I" << endl;
-	else if (min_index == 3)
-		cout << "\n\nVowel is O" << endl;
-	else
-		cout << "\n\nVowel is U" << endl;
 
-	cout << endl;
+	min_tokhura_universe[universe_index] = min;
+	bin_index[universe_index] = min_index;
+	//cout << "Bin[" << universe_index << "]:" << min_index << endl;
 }
 
 //To get Centroid for CB of size 1
 void get_intial_centroid(){
+
 	int line=0, col=0;
 	string temp;	
 
@@ -105,27 +81,95 @@ void get_intial_centroid(){
 		
 		for (int i = 0; i < CODE_BOOK_SIZE; i++){
 			for (int j = 0; j < 12; j++){
-				code_book[i][j] /= 125;
+				code_book[i][j] /= UNIVERSE_FILE_SIZE;
 			}
 		}
 
+		/*cout << "\nCode Book" << endl;
 		for (int i = 0; i < CODE_BOOK_SIZE; i++){
 			for (int j = 0; j < 12; j++){
-
-				printf("\n %f", code_book[i][j]);
+				cout << code_book[i][j] << endl;
 			}
-		}
-
+		}*/
 		in.close();
 }
 
 void binary_split(){
+	float epsilon = 0.03;
+	float temp = 0;
+	cout << "\nCurrent Code Book Size : " << current_cb_size << endl;
 
+	for (int i = current_cb_size-2; i >=0 ; i--){
+		for (int j = 0; j < 12; j++){
+			temp = code_book[i][j];
+			code_book[2*i][j] = temp - epsilon;
+			code_book[2*i + 1][j] = temp + epsilon;
+		}
+	}
+	/*cout << "\nCode Book" << endl;
+	for (int i = 0; i < CODE_BOOK_SIZE; i++){
+		for (int j = 0; j < 12; j++){
+			cout << code_book[i][j] << endl;
+		}
+	}*/
+
+	
+}
+
+void update_code_book(){
+	int no_of_entries[CODE_BOOK_SIZE] = { 0 };
+	float temp_code_book_sum[CODE_BOOK_SIZE][12] = { 0 };
+	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){		
+		no_of_entries[bin_index[i]] += 1;
+		for (int j = 0; j < 12; j++){
+			temp_code_book_sum[bin_index[i]][j] += universe_arr[i][j];				
+		}
+	}
+
+	for (int i = 0; i < current_cb_size; i++){
+		cout << "No of Entries for :" << i << " : " << no_of_entries[i]<<endl;
+		for (int j = 0; j < 12; j++){
+			code_book[i][j] = temp_code_book_sum[i][j] / no_of_entries[i];
+			temp_code_book_sum[i][j] = 0;
+			//cout << " " << code_book[i][j];
+		}
+		//cout << endl;
+	}
+
+}
+
+void K_means(){
+	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){
+		calculate_tokhura_distance(universe_arr[i], i);
+	}
+
+	update_code_book();
+}
+
+long double calculate_avg_distortion(float min_tokhura_universe[UNIVERSE_FILE_SIZE]){
+	long double sum = 0;
+	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++)
+		sum += min_tokhura_universe[i];
+	return sum;
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
+	int prev_distortion=0,distortion;
 	get_intial_centroid();
+
+	current_cb_size += 1;
+	binary_split();
+	
+
+	for (int i = 0; i < 10; i++){
+		K_means();
+		distortion = calculate_avg_distortion(min_tokhura_universe);
+		cout << "Prev Distortion:" << prev_distortion<<endl;
+		cout << "Current Distortion:" << distortion << endl;
+		prev_distortion = distortion;
+	}
+
 	return 0;
 }
 
