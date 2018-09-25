@@ -1,18 +1,22 @@
 // Vector_Quantization.cpp : Defines the entry point for the console application.
-//
+
 
 #include "stdafx.h"
 #include "iostream"
 #include "fstream"
 #include "string"
 #define UNIVERSE_FILE_SIZE 125
+#define CODE_BOOK_SIZE 8
+
 using namespace std;
 
 ifstream in, in1;
 ofstream out;
 
 float tokhura_dist[5] = { 0 };
+float tokhura_weight[12] = { 1, 3, 7, 13, 19, 22, 25, 33, 42, 50, 56, 61 };
 float universe_arr[UNIVERSE_FILE_SIZE][12] = {0};
+float code_book[CODE_BOOK_SIZE][12] = { 0 };
 
 //Used Files
 char* input_file = "input.txt";
@@ -77,19 +81,51 @@ void calculate_tokhura_distance(){
 
 //To get Centroid for CB of size 1
 void get_intial_centroid(){
+	int line=0, col=0;
+	string temp;	
 
 	in.open(universe_file);
-	for (int i = 0; i < 12; i++){
-		for (int j = 0; j < UNIVERSE_FILE_SIZE; j++){
-			
+	
+		while (in >> temp){
+			universe_arr[line][col++] = stof(temp);
+			if (col == 12){
+				line = line + 1;
+				col = 0;
+			}
 		}
-	}
-	in.close();
+
+		printf("\nLine : %d", line);
+		printf("\nCol : %d", col);
+
+		for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){
+			for (int j = 0; j < 12; j++){
+				code_book[0][j] += universe_arr[i][j];
+			}
+		}
+		
+		for (int i = 0; i < CODE_BOOK_SIZE; i++){
+			for (int j = 0; j < 12; j++){
+				code_book[i][j] /= 125;
+			}
+		}
+
+		for (int i = 0; i < CODE_BOOK_SIZE; i++){
+			for (int j = 0; j < 12; j++){
+
+				printf("\n %f", code_book[i][j]);
+			}
+		}
+
+		in.close();
+}
+
+void binary_split(){
+
 }
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
+	get_intial_centroid();
 	return 0;
 }
 
