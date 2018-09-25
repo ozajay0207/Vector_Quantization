@@ -12,6 +12,20 @@ ofstream out;
 
 float tokhura_dist[5] = { 0 };
 
+//Used Files
+char* input_file = "input.txt";
+char* reference_file[5] = { "ref_file_prime_a.txt", "ref_file_prime_e.txt", "ref_file_prime_i.txt", "ref_file_prime_o.txt", "ref_file_prime_u.txt" };
+char* normalized_file = "Normalized.txt";
+char* silence_file = "silence.txt";
+char* trimmed_file = "trim.txt";
+char* ri_file = "ri_file.txt";
+char* ai_file = "ai_file.txt";
+char* ci_file = "ci_file.txt";
+char* c_prime_file = "c_prime.txt";
+char* universe_file = "universe_vowel.txt";
+char* hamming_file = "Hamming_window.txt";
+
+
 //Calculating Tokhura's Distance Using Reference Files for vowels
 void calculate_tokhura_distance(){
 	int count = 0, j = 0, min_index = 0;
