@@ -5,7 +5,7 @@
 #include "iostream"
 #include "fstream"
 #include "string"
-#define UNIVERSE_FILE_SIZE 125
+#define UNIVERSE_FILE_SIZE 6340
 #define CODE_BOOK_SIZE 8
 
 using namespace std;
@@ -16,21 +16,25 @@ ofstream out;
 int current_cb_size = 1;
 int bin_index[UNIVERSE_FILE_SIZE] = { -1 };
 
-float tokhura_dist[5] = { 0 };
 float tokhura_weight[12] = { 1, 3, 7, 13, 19, 22, 25, 33, 42, 50, 56, 61 };
 float universe_arr[UNIVERSE_FILE_SIZE][12] = {0};
 float code_book[CODE_BOOK_SIZE][12] = { 0 };
-float min_tokhura_universe_prev[UNIVERSE_FILE_SIZE] = { 0 };
 float min_tokhura_universe[UNIVERSE_FILE_SIZE];
 
 //Used Files
 char* input_file = "input.txt";
-char* reference_file[5] = { "ref_file_prime_a.txt", "ref_file_prime_e.txt", "ref_file_prime_i.txt", "ref_file_prime_o.txt", "ref_file_prime_u.txt" };
-char* silence_file = "silence.txt";
-char* c_prime_file = "delete_it.txt";
-char* universe_file = "universe_vowel.txt";
-char* hamming_file = "Hamming_window.txt";
+char* universe_file = "Universe1.txt";
 
+//To Print CodeBook
+void print_code_book(){
+	cout << "\nCode Book" << endl;
+	for (int i = 0; i < CODE_BOOK_SIZE; i++){
+		for (int j = 0; j < 12; j++){
+			cout << " " << code_book[i][j];
+		}
+		cout << endl;
+	}
+}
 
 //Calculating Tokhura's Distance Using Code Book
 void calculate_tokhura_distance(float c[12],int universe_index){
@@ -51,7 +55,6 @@ void calculate_tokhura_distance(float c[12],int universe_index){
 
 	min_tokhura_universe[universe_index] = min;
 	bin_index[universe_index] = min_index;
-	//cout << "Bin[" << universe_index << "]:" << min_index << endl;
 }
 
 //To get Centroid for CB of size 1
@@ -70,9 +73,7 @@ void get_intial_centroid(){
 			}
 		}
 
-		printf("\nLine : %d", line);
-		printf("\nCol : %d", col);
-
+		
 		for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){
 			for (int j = 0; j < 12; j++){
 				code_book[0][j] += universe_arr[i][j];
@@ -85,15 +86,10 @@ void get_intial_centroid(){
 			}
 		}
 
-		/*cout << "\nCode Book" << endl;
-		for (int i = 0; i < CODE_BOOK_SIZE; i++){
-			for (int j = 0; j < 12; j++){
-				cout << code_book[i][j] << endl;
-			}
-		}*/
 		in.close();
 }
 
+//To perform Binary Split operation
 void binary_split(){
 	float epsilon = 0.03;
 	float temp = 0;
@@ -106,16 +102,10 @@ void binary_split(){
 			code_book[2*i + 1][j] = temp + epsilon;
 		}
 	}
-	/*cout << "\nCode Book" << endl;
-	for (int i = 0; i < CODE_BOOK_SIZE; i++){
-		for (int j = 0; j < 12; j++){
-			cout << code_book[i][j] << endl;
-		}
-	}*/
-
 	
 }
 
+//To optimize the CodeBook
 void update_code_book(){
 	int no_of_entries[CODE_BOOK_SIZE] = { 0 };
 	float temp_code_book_sum[CODE_BOOK_SIZE][12] = { 0 };
@@ -130,14 +120,13 @@ void update_code_book(){
 		cout << "No of Entries for :" << i << " : " << no_of_entries[i]<<endl;
 		for (int j = 0; j < 12; j++){
 			code_book[i][j] = temp_code_book_sum[i][j] / no_of_entries[i];
-			temp_code_book_sum[i][j] = 0;
-			//cout << " " << code_book[i][j];
-		}
-		//cout << endl;
+			temp_code_book_sum[i][j] = 0;			
+		}		
 	}
 
 }
 
+//Performs K Means Clustering for training vectors
 void K_means(){
 	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){
 		calculate_tokhura_distance(universe_arr[i], i);
@@ -146,30 +135,45 @@ void K_means(){
 	update_code_book();
 }
 
+//To Calculate Average Distortion using minimum tokhura distortion of training vectors
 long double calculate_avg_distortion(float min_tokhura_universe[UNIVERSE_FILE_SIZE]){
 	long double sum = 0;
-	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++)
+	for (int i = 0; i < UNIVERSE_FILE_SIZE; i++){
 		sum += min_tokhura_universe[i];
-	return sum;
+		min_tokhura_universe[i] = 0;
+	}
+		
+	return sum/UNIVERSE_FILE_SIZE;
+}
+
+//To perform Binary Split Operation
+void Linde_Buzo_Gram(){
+	out.open("Distortion.txt");
+	double prev_distortion = 0, distortion;
+
+	get_intial_centroid();
+
+	while (current_cb_size < CODE_BOOK_SIZE){
+		current_cb_size = current_cb_size * 2;
+		binary_split();
+		for (int i = 0; i < 20; i++){
+			K_means();
+			distortion = calculate_avg_distortion(min_tokhura_universe);
+			cout << "\nPrev Distortion:" << prev_distortion << endl;
+			cout << "Current Distortion:" << distortion << endl;
+			cout << "Difference:" << prev_distortion - distortion << endl;
+			prev_distortion = distortion;
+			out << distortion << endl;
+		}
+		out << endl;
+	}
+	out.close();
+	print_code_book();
 }
 
 int _tmain(int argc, _TCHAR* argv[])
-{
-	int prev_distortion=0,distortion;
-	get_intial_centroid();
-
-	current_cb_size += 1;
-	binary_split();
-	
-
-	for (int i = 0; i < 10; i++){
-		K_means();
-		distortion = calculate_avg_distortion(min_tokhura_universe);
-		cout << "Prev Distortion:" << prev_distortion<<endl;
-		cout << "Current Distortion:" << distortion << endl;
-		prev_distortion = distortion;
-	}
-
+{	
+	Linde_Buzo_Gram();
 	return 0;
 }
 
